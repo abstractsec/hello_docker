@@ -51,10 +51,11 @@ jobs:
           command: |
             . venv/bin/activate
             python -m flask run &
+            FLASK_PID=$!
             sleep 3
             pytest -v
+            kill $FLASK_PID && wait $FLASK_PID
 
       - store_artifacts:
           path: test-reports
           destination: test-reports
-          
