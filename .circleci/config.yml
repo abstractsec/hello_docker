@@ -3,6 +3,11 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
 version: 2
+general:
+  branches:
+    only:
+     - develop
+     - master
 jobs:
   build:
     docker:
@@ -53,9 +58,12 @@ jobs:
             python -m flask run &
             FLASK_PID=$!
             sleep 3
-            pytest -v
-            #kill $FLASK_PID && wait $FLASK_PID
+            pytest -v > ./test/stdout 2>./test/stderr
 
       - store_artifacts:
-          path: test-reports
-          destination: test-reports
+          path: test
+          destination: test
+          
+      - store_artifacts:
+          path: docker
+          destination: docker
