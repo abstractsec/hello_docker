@@ -76,8 +76,15 @@ jobs:
       - run:
           name: build
           command: |
-            echo $DOCKER_USER
+            echo "Vers:" $GIT_VERSION
+            echo "User:" $CIRCLE_PROJECT_USERNAME
+            echo "Proj:" $CIRCLE_PROJECT_REPO
+      - deploy
+          name: deploy
+          command: |
+            echo "Dock:" $DOCKER_USER
             #docker login -u $DOCKER_USER -p $DOCKER_PASS
+            #docker push [OPTIONS] NAME[:TAG]
 
 workflows:
   version: 2
