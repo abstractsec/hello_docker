@@ -4,31 +4,22 @@
 #
 version: 2
 jobs:
-  build:
+  pytest:
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
       - image: circleci/python:3.6.1
-      
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
     environment:
       FLASK_APP: "app.py"
-
-    working_directory: ~/repo
-
+    working_directory: ~/app
     steps:
       - checkout
-
-      # Download and cache dependencies
+      # Restore cached dependencies
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
+      # Update/install dependencies via PIP
       - run:
           name: install dependencies
           command: |
@@ -36,16 +27,13 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
 
+      # Cached installed dependencies
       - save_cache:
           paths:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
-        
-      # run tests!
-      # this example uses Django's built-in test-runner
-      # other common Python testing frameworks include pytest and nose
-      # https://pytest.org
-      # https://nose.readthedocs.io
+
+      # Run tests
       - run:
           name: run tests
           command: |
@@ -54,8 +42,65 @@ jobs:
             FLASK_PID=$!
             sleep 3
             pytest -v
-            #kill $FLASK_PID && wait $FLASK_PID
+  deploy:
+    docker:
+      - image: circleci/python:3.6.1
+    environment:
+      FLASK_APP: "app.py"
+    working_directory: ~/app
+    steps:
+      - checkout
+      - setup_remote_docker
+      # Restore cached dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "requirements.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
 
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
+      # Update/install dependencies via PIP
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+
+      # Cached installed dependencies
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      # Build docker image
+      - run:
+          name: build
+          command: |
+            echo "Vers:" $GIT_VERSION
+            echo "User:" $CIRCLE_PROJECT_USERNAME
+            echo "Proj:" $CIRCLE_PROJECT_REPO
+      - deploy:
+          name: deploy
+          command: |
+            echo "Dock:" $DOCKER_USER
+            #docker login -u $DOCKER_USER -p $DOCKER_PASS
+            #docker push [OPTIONS] NAME[:TAG]
+
+workflows:
+  version: 2
+  build-n-deploy:
+    jobs:
+      - pytest:
+          filters:
+            branches:
+              only:
+                - develop
+      - deploy:
+          context: docker
+          requires:
+            - pytest
+          filters:
+            tags:
+              only: /^[0-9]+\.[0-9]+.[0-9]+$/
+            branches:
+              ignore: /.*/
