@@ -95,6 +95,7 @@ workflows:
             branches:
               only:
                 - develop
+                - master
       - deploy:
           context: docker
           requires:
