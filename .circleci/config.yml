@@ -79,7 +79,7 @@ jobs:
             echo "Vers:" $GIT_VERSION
             echo "User:" $CIRCLE_PROJECT_USERNAME
             echo "Proj:" $CIRCLE_PROJECT_REPO
-      - deploy
+      - deploy:
           name: deploy
           command: |
             echo "Dock:" $DOCKER_USER
