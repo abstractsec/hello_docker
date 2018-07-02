@@ -1,0 +1,106 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  pytest:
+    docker:
+      - image: circleci/python:3.6.1
+    environment:
+      FLASK_APP: "app.py"
+    working_directory: ~/app
+    steps:
+      - checkout
+      # Restore cached dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "requirements.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      # Update/install dependencies via PIP
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+
+      # Cached installed dependencies
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      # Run tests
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            python -m flask run &
+            FLASK_PID=$!
+            sleep 3
+            pytest -v
+  deploy:
+    docker:
+      - image: circleci/python:3.6.1
+    environment:
+      FLASK_APP: "app.py"
+    working_directory: ~/app
+    steps:
+      - checkout
+      - setup_remote_docker
+      # Restore cached dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "requirements.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      # Update/install dependencies via PIP
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+
+      # Cached installed dependencies
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      # Build docker image
+      - run:
+          name: build
+          command: |
+            echo "Vers:" $GIT_VERSION
+            echo "User:" $CIRCLE_PROJECT_USERNAME
+            echo "Proj:" $CIRCLE_PROJECT_REPO
+      - deploy:
+          name: deploy
+          command: |
+            echo "Dock:" $DOCKER_USER
+            #docker login -u $DOCKER_USER -p $DOCKER_PASS
+            #docker push [OPTIONS] NAME[:TAG]
+
+workflows:
+  version: 2
+  build-n-deploy:
+    jobs:
+      - pytest:
+          filters:
+            branches:
+              only:
+                - develop
+      - deploy:
+          context: docker
+          requires:
+            - pytest
+          filters:
+            tags:
+              only: /^[0-9]+\.[0-9]+.[0-9]+$/
+            branches:
+              ignore: /.*/
