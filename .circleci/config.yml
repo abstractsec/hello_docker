@@ -48,6 +48,7 @@ jobs:
             python -m flask run &
             FLASK_PID=$!
             sleep 3
+            cd ..
             pytest -v
   build_docker:
     docker:
