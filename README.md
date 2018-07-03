@@ -1,6 +1,5 @@
 # hello_docker
-
-![Version](https://img.shields.io/github/tag/abstractsec/hello_docker.svg) ![Build Status](https://img.shields.io/circleci/project/github/abstractsec/hello_docker/develop.svg)
+[![CircleCI](https://circleci.com/gh/abstractsec/hello_docker.svg?style=svg)](https://circleci.com/gh/abstractsec/hello_docker)
 
 CI built docker image, hosting a simple python web service
 
